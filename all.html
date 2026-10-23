@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="中国八省六维经济画像：2000—2023年产业、金融、财政与开放结构的动态比较。" />
+<title>八省六维经济画像（2000—2023）</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  :root {
+    --ink: #1c2430;
+    --muted: #6b7785;
+    --line: #dde5ee;
+    --paper: #ffffff;
+    --bg: #f4f7fb;
+    --accent: #2f5d8a;
+    --accent-soft: #e8f0f8;
+    --gold: #b98b4e;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    overflow: hidden;
+    color: var(--ink);
+    background:
+      radial-gradient(1100px 680px at 8% -12%, #e5eef8 0%, transparent 55%),
+      radial-gradient(900px 620px at 102% -4%, #f6ede1 0%, transparent 48%),
+      var(--bg);
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  }
+  .app {
+    display: grid;
+    grid-template-columns: 252px minmax(0, 1fr);
+    height: 100vh;
+  }
+  aside {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 26px 18px 20px;
+    background: rgba(255,255,255,.72);
+    border-right: 1px solid rgba(221,229,238,.9);
+    backdrop-filter: blur(14px);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; padding: 0 6px; }
+  .mark {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    color: #fff;
+    background: linear-gradient(145deg, #284c72, #3f739f);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    box-shadow: 0 8px 18px rgba(47,93,138,.2);
+  }
+  .brand h1 { margin: 0; font-size: 17px; line-height: 1.25; letter-spacing: .01em; }
+  .brand p { margin: 5px 0 0; color: var(--muted); font-size: 11px; letter-spacing: .16em; }
+  .lede {
+    margin: 22px 6px 8px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  #provinceNav { margin-top: 8px; overflow: auto; padding: 2px 2px 8px; }
+  .region { margin-top: 14px; }
+  .region-title {
+    margin: 0 8px 6px;
+    color: #98a4b2;
+    font-size: 10px;
+    letter-spacing: .2em;
+  }
+  .province {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 9px 10px;
+    border: 0;
+    border-radius: 8px;
+    color: #435061;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .18s ease, color .18s ease, transform .18s ease;
+  }
+  .province:hover { background: #edf3fa; color: var(--accent); transform: translateX(2px); }
+  .province.active { background: var(--ink); color: #fff; box-shadow: 0 6px 14px rgba(28,36,48,.16); }
+  .province .num { color: #a3afbc; font-size: 10px; font-variant-numeric: tabular-nums; }
+  .province.active .num { color: rgba(255,255,255,.55); }
+  .aside-note {
+    margin-top: auto;
+    padding: 14px 8px 0;
+    border-top: 1px solid var(--line);
+    color: #8b97a5;
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  main {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 26px 30px 16px;
+  }
+  .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+  .eyebrow {
+    margin: 0 0 7px;
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .18em;
+  }
+  .top h2 {
+    margin: 0;
+    font-family: "Songti SC", "SimSun", serif;
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: .02em;
+  }
+  .sub { margin: 7px 0 0; color: var(--muted); font-size: 12px; letter-spacing: .04em; }
+  .year-badge {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 10px 14px;
+    border: 1px solid rgba(185,139,78,.32);
+    border-radius: 10px;
+    color: var(--gold);
+    background: rgba(255,255,255,.58);
+    font-variant-numeric: tabular-nums;
+  }
+  .year-badge span:first-child { font-size: 25px; font-weight: 700; letter-spacing: .03em; }
+  .year-badge span:last-child { font-size: 11px; opacity: .8; }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 20px 0 14px;
+  }
+  .stat {
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(221,229,238,.95);
+    border-radius: 10px;
+    background: rgba(255,255,255,.64);
+  }
+  .stat span { display: block; color: var(--muted); font-size: 10px; letter-spacing: .08em; }
+  .stat strong {
+    display: inline-block;
+    margin-top: 5px;
+    font-size: 19px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat em { margin-left: 7px; color: #8d99a7; font-size: 10px; font-style: normal; }
+  .chart-card {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 390px;
+    overflow: hidden;
+    border: 1px solid rgba(221,229,238,.95);
+    border-radius: 16px;
+    background: rgba(255,255,255,.82);
+    box-shadow: 0 18px 44px rgba(36,58,80,.08);
+  }
+  #chart { width: 100%; height: 100%; }
+  .timeline {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 13px 2px 0;
+    color: var(--muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  .play {
+    min-width: 54px;
+    padding: 7px 13px;
+    border: 1px solid rgba(47,93,138,.24);
+    border-radius: 7px;
+    color: var(--accent);
+    background: rgba(255,255,255,.7);
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .play:hover { background: var(--accent-soft); }
+  input[type="range"] {
+    flex: 1;
+    height: 3px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .hint { color: #9aa6b3; }
+  .foot {
+    margin: 9px 2px 0;
+    color: #98a4b1;
+    font-size: 10px;
+    line-height: 1.7;
+  }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .app { display: block; height: auto; min-height: 100%; }
+    aside { padding: 18px 16px 14px; border-right: 0; border-bottom: 1px solid var(--line); }
+    .lede, .aside-note { display: none; }
+    #provinceNav { display: flex; gap: 4px; padding-top: 12px; }
+    .region { margin: 0; }
+    .region-title { display: none; }
+    .province { width: auto; padding: 7px 10px; }
+    .province .num { display: none; }
+    main { padding: 18px 16px 14px; }
+    .top h2 { font-size: 28px; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .chart-card { min-height: 62vh; }
+    .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <div class="mark">八</div>
+      <div>
+        <h1>八省六维<br />经济画像</h1>
+        <p>2000 — 2023</p>
+      </div>
+    </div>
+    <p class="lede">把省际竞争拆成六个维度：产业、金融、财政、开放。每一瓣的长度，都是相对八省全样本的位置。</p>
+    <nav id="provinceNav" aria-label="选择省份"></nav>
+    <div class="aside-note">归一化基于八省 2000—2023 年共 192 个样本的真实极值。切换省份，可看同一把尺子下的不同结构。</div>
+  </aside>
+
+  <main>
+    <div class="top">
+      <div>
+        <p class="eyebrow" id="regionLabel">中部 · 中国</p>
+        <h2 id="provinceTitle">湖北</h2>
+        <p class="sub" id="subtitle">六维经济画像 · 2000—2023</p>
+      </div>
+      <div class="year-badge"><span id="yearBig">2000</span><span>年</span></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span>金融相关率</span><strong id="firValue">—</strong><em id="firDelta">—</em></div>
+      <div class="stat"><span>当年 FIR 位次</span><strong id="firRank">—</strong><em>八省之中</em></div>
+      <div class="stat"><span>三产占比</span><strong id="industryValue">—</strong><em id="industryDelta">—</em></div>
+    </div>
+
+    <section class="chart-card" aria-label="六维经济画像玫瑰图">
+      <div id="chart" role="img" aria-label="六维经济画像玫瑰图"></div>
+    </section>
+
+    <div class="timeline">
+      <button class="play" id="playBtn" type="button">暂停</button>
+      <span>2000</span>
+      <input id="yearSlider" type="range" min="2000" max="2023" step="1" value="2000" aria-label="选择年份" />
+      <span>2023</span>
+      <span class="hint">拖动年份，看结构变化</span>
+    </div>
+    <p class="foot">注：六个维度按八省全样本极值归一化，得分只用于省内与省际比较；财政汲取率＝地方财政收入／GDP，开放程度＝进出口总额／GDP。数据来源：八省统计年鉴（2000—2023）。</p>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var PROVINCES = {"hubei":{"name":"湖北","region":"中部","data":{"primary":[18.51,17.65,16.58,16.57,17.95,16.34,14.74,13.87,14.66,12.79,12.39,12.21,11.67,11.15,10.42,10.14,10.09,9.38,8.36,8.36,9.61,9.25,9.32,8.92],"secondary":[40.05,40.02,39.98,40.46,40.46,42.13,42.83,43.0,43.27,44.97,46.99,48.28,48.66,45.82,45.16,44.26,43.02,41.77,41.42,40.38,38.03,38.41,37.33,36.54],"tertiary":[41.44,42.33,43.43,42.97,41.59,41.54,42.43,43.13,42.07,42.24,40.62,39.51,39.67,43.02,44.42,45.6,46.89,48.86,50.21,51.26,52.36,52.34,53.35,54.54],"fir":[1.652,2.068,2.216,2.309,2.203,2.099,2.101,1.992,1.934,2.25,2.236,2.018,2.068,2.155,2.206,2.343,2.505,2.591,2.533,2.409,2.924,2.79,2.859,2.99],"fiscal":[0.0599,0.0591,0.0571,0.0539,0.0552,0.0573,0.0623,0.0615,0.0607,0.0607,0.0613,0.0755,0.0795,0.0848,0.0891,0.098,0.0919,0.0863,0.078,0.0744,0.0584,0.0655,0.0614,0.065],"openness":[0.0746,0.0757,0.0768,0.0878,0.0997,0.1133,0.1226,0.1177,0.122,0.0877,0.1064,0.107,0.088,0.0872,0.0918,0.0926,0.077,0.0833,0.0822,0.0866,0.0998,0.1073,0.1155,0.1136]}},"liaoning":{"name":"辽宁","region":"东北","data":{"primary":[10.45,10.46,10.42,10.01,11.83,11.64,10.7,10.34,9.88,9.98,10.41,10.21,10.31,10.1,9.82,9.94,8.84,8.61,8.38,8.49,8.84,8.65,8.74,8.42],"secondary":[49.67,47.91,47.2,47.56,45.17,46.91,47.83,48.55,50.99,50.29,50.91,51.12,49.02,47.12,44.35,40.39,37.76,37.68,37.53,37.05,35.97,37.46,36.73,35.38],"tertiary":[39.88,41.63,42.37,42.43,43.0,41.46,41.47,41.11,39.13,39.73,38.67,38.67,40.66,42.78,45.83,49.66,53.4,53.72,54.09,54.46,55.19,53.89,54.53,56.21],"fir":[2.372,2.422,2.537,2.693,2.689,2.476,2.441,2.286,2.196,2.518,2.496,2.414,2.48,2.541,2.623,2.931,4.063,4.081,4.108,4.508,4.786,4.464,4.476,4.476],"fiscal":[0.0629,0.073,0.0726,0.0748,0.0809,0.092,0.0963,0.1039,0.1102,0.1224,0.1421,0.1594,0.1713,0.1712,0.1567,0.103,0.1056,0.1082,0.1085,0.1033,0.1028,0.0971,0.0849,0.0878],"openness":[0.3347,0.3247,0.3267,0.368,0.4353,0.4576,0.4544,0.4339,0.4089,0.3305,0.3871,0.3737,0.3621,0.3623,0.3435,0.2897,0.2759,0.3048,0.3129,0.2827,0.2533,0.2713,0.2659,0.244]}},"zhejiang":{"name":"浙江","region":"东部","data":{"primary":[10.24,9.52,8.52,7.36,7.0,6.77,5.97,5.2,5.04,4.97,4.83,4.82,4.68,4.6,4.31,4.07,4.0,3.69,3.41,3.34,3.23,2.88,2.71,2.88],"secondary":[53.32,51.82,51.15,52.56,53.65,53.37,54.21,54.31,54.09,52.04,51.61,51.08,49.56,48.65,48.92,47.36,45.65,44.36,43.63,42.1,39.66,40.87,40.7,39.23],"tertiary":[36.44,38.65,40.33,40.08,39.35,39.86,39.82,40.49,40.87,42.99,43.56,44.1,45.75,46.75,46.76,48.57,50.35,51.95,52.96,54.55,57.11,56.25,56.59,57.9],"fir":[2.108,2.219,2.585,2.868,2.819,2.85,2.911,2.878,3.035,3.668,3.658,3.531,3.64,3.683,3.749,3.889,3.838,3.816,3.956,4.058,4.579,4.578,4.969,5.305],"fiscal":[0.0556,0.0603,0.0705,0.0724,0.0785,0.0819,0.0848,0.0885,0.0908,0.0938,0.0952,0.0989,0.1001,0.1017,0.103,0.1106,0.1122,0.1108,0.1138,0.1128,0.1079,0.1076,0.0995,0.1004],"openness":[0.3738,0.3919,0.4319,0.5212,0.6142,0.6752,0.7248,0.7214,0.6889,0.5616,0.6264,0.6273,0.5736,0.557,0.5449,0.4964,0.4731,0.4869,0.4933,0.4939,0.5017,0.5385,0.5857,0.5735]}},"sichuan":{"name":"四川","region":"西部","data":{"primary":[23.78,22.56,21.88,20.81,20.78,19.26,18.76,18.39,16.53,15.01,13.65,13.39,12.97,12.13,12.01,11.88,11.51,11.07,10.17,10.19,11.24,10.27,10.35,8.89],"secondary":[36.05,36.13,36.18,37.26,38.15,40.63,42.53,43.08,44.56,46.22,47.42,46.99,46.36,46.24,44.56,42.79,39.7,37.83,36.88,36.47,35.58,36.31,35.26,35.66],"tertiary":[40.17,41.3,41.94,41.93,41.07,40.11,38.71,38.53,38.91,38.78,38.92,39.62,40.67,41.63,43.43,45.33,48.79,51.11,52.95,53.34,53.18,53.42,54.38,55.45],"fir":[2.136,2.272,2.378,2.465,2.432,2.766,2.695,2.518,2.82,3.383,2.876,2.734,2.838,2.971,3.05,3.267,3.293,3.237,3.2,3.065,3.289,3.298,3.546,3.769],"fiscal":[0.0588,0.0623,0.0609,0.0621,0.0603,0.0658,0.0706,0.0795,0.0805,0.0816,0.0894,0.0959,0.1,0.1037,0.1043,0.1088,0.1,0.0929,0.0898,0.0863,0.0862,0.0866,0.0847,0.0901],"openness":[0.0531,0.0747,0.0772,0.0861,0.0889,0.0888,0.1021,0.1022,0.1183,0.115,0.127,0.1448,0.1541,0.1489,0.147,0.1035,0.0966,0.1196,0.1366,0.1434,0.1635,0.1726,0.1749,0.1561]}},"shaanxi":{"name":"陕西","region":"西部","data":{"primary":[14.16,12.96,12.37,11.56,11.22,10.85,10.04,9.77,9.89,9.28,9.49,9.64,9.19,9.09,8.88,8.8,8.76,8.0,7.51,7.6,8.62,7.91,7.79,7.8],"secondary":[42.92,43.2,44.17,46.63,47.38,46.87,48.92,49.93,50.52,49.63,50.85,52.63,53.19,52.26,51.29,47.64,46.02,46.45,46.05,44.21,40.77,42.54,43.18,41.02],"tertiary":[42.92,43.84,43.46,41.81,41.39,42.28,41.03,40.3,39.59,41.09,39.65,37.73,37.62,38.65,39.83,43.57,45.22,45.56,46.44,48.19,50.61,49.56,49.03,51.18],"fir":[2.924,2.856,2.995,3.147,2.9,2.651,2.512,2.366,2.303,2.71,2.617,2.485,2.527,2.579,2.654,3.006,3.089,2.972,2.933,3.058,3.385,3.322,3.381,3.56],"fiscal":[0.0631,0.0668,0.0659,0.0677,0.0676,0.0714,0.078,0.0828,0.0815,0.0908,0.0961,0.1218,0.1118,0.1085,0.1072,0.1133,0.0948,0.0922,0.0921,0.0873,0.0858,0.0911,0.1002,0.1012],"openness":[0.0972,0.0839,0.0807,0.0879,0.0949,0.0972,0.0921,0.0912,0.0797,0.0709,0.0821,0.0768,0.0653,0.0774,0.0953,0.1042,0.102,0.1247,0.1443,0.1341,0.1434,0.1561,0.1464,0.119]}},"jiangsu":{"name":"江苏","region":"东部","data":{"primary":[12.14,11.46,10.35,9.23,8.67,7.58,6.82,6.5,6.32,6.11,5.71,5.85,5.93,5.7,5.45,5.5,5.16,4.68,4.43,4.3,4.34,3.94,3.98,3.88],"secondary":[51.37,51.36,52.26,53.92,55.51,55.78,55.71,54.97,54.22,53.22,51.82,50.78,49.67,48.18,46.88,46.43,44.78,45.22,45.08,44.35,43.41,44.7,44.43,43.79],"tertiary":[36.49,37.18,37.38,36.85,35.82,36.64,37.47,38.53,39.45,40.67,42.47,43.37,44.4,46.13,47.67,48.07,50.06,50.1,50.49,51.34,52.25,51.36,51.59,52.33],"fir":[1.674,1.731,1.896,2.144,2.112,2.011,2.04,2.019,2.039,2.442,2.441,2.313,2.403,2.467,2.509,2.663,2.742,2.702,2.759,2.872,3.184,3.157,3.387,3.694],"fiscal":[0.0519,0.0599,0.06,0.0634,0.0654,0.0721,0.077,0.0848,0.0869,0.0921,0.0967,0.1036,0.1072,0.1086,0.1092,0.1117,0.1038,0.0945,0.0923,0.0882,0.0866,0.0836,0.0743,0.0758],"openness":[0.4375,0.4449,0.5426,0.7474,0.9428,1.0178,1.0518,1.0082,0.8664,0.6599,0.7476,0.7016,0.633,0.5638,0.5229,0.4728,0.4325,0.4613,0.4702,0.4349,0.424,0.43,0.4397,0.4016]}},"guangdong":{"name":"广东","region":"东部","data":{"primary":[9.0,8.03,7.33,6.59,6.42,6.24,5.66,5.15,5.14,4.84,4.7,4.73,4.67,4.51,4.37,4.21,4.19,3.88,3.77,3.94,4.16,3.91,4.04,4.03],"secondary":[46.02,45.17,44.84,47.18,48.39,49.4,49.84,49.59,49.58,48.34,48.95,48.44,47.1,46.02,45.88,44.73,42.52,41.44,40.64,39.4,38.48,39.17,38.73,38.2],"tertiary":[44.98,46.8,47.83,46.23,45.19,44.36,44.5,45.26,45.28,46.82,46.36,46.83,48.23,49.47,49.75,51.06,53.29,54.68,55.6,56.66,57.36,56.92,57.23,57.77],"fir":[3.726,3.419,3.583,3.59,3.399,3.284,3.175,3.02,3.001,3.481,3.52,3.397,3.593,3.754,3.685,4.312,3.596,3.574,3.631,3.719,4.183,4.144,4.4,4.588],"fiscal":[0.0831,0.0942,0.0868,0.0808,0.0747,0.0808,0.0825,0.0862,0.0886,0.0908,0.0965,0.1021,0.1073,0.1111,0.1159,0.1235,0.1244,0.1217,0.1188,0.1146,0.1137,0.1106,0.1,0.1004],"openness":[1.285,1.1858,1.3214,1.4415,1.5562,1.5675,1.5918,1.4926,1.2736,1.038,1.1345,1.0924,1.0697,1.0603,0.9504,0.8403,0.76,0.7307,0.7048,0.6474,0.6212,0.6456,0.6305,0.6029]}},"anhui":{"name":"安徽","region":"中部","data":{"primary":[23.46,21.44,20.19,17.13,18.24,16.77,15.31,13.82,13.55,12.5,11.88,11.3,10.84,10.4,10.03,9.84,9.29,8.57,7.67,7.76,8.24,7.8,7.72,7.25],"secondary":[33.59,35.47,34.7,35.6,35.43,38.14,40.18,41.74,43.28,44.46,47.47,49.53,49.68,48.99,48.0,44.89,42.97,42.07,41.0,39.63,39.57,39.27,38.87,38.85],"tertiary":[42.95,43.09,45.11,47.27,46.33,45.09,44.5,44.44,43.17,43.04,40.65,39.17,39.47,40.6,41.97,45.27,47.74,49.36,51.33,52.61,52.18,52.93,53.4,53.91],"fir":[1.603,1.698,1.816,1.928,1.919,1.957,2.026,1.985,1.968,2.27,2.283,2.202,2.324,2.425,2.535,2.771,2.91,2.964,2.982,2.658,2.88,2.896,3.167,3.394],"fiscal":[0.0565,0.0542,0.0516,0.0505,0.0527,0.058,0.0648,0.0673,0.0748,0.0781,0.0853,0.0885,0.0963,0.0993,0.097,0.1017,0.0997,0.0933,0.0887,0.0847,0.0833,0.0812,0.0788,0.0817],"openness":[0.0876,0.0845,0.09,0.1124,0.1145,0.1297,0.1479,0.15,0.1465,0.0966,0.122,0.1224,0.1334,0.135,0.1323,0.1259,0.11,0.1205,0.1213,0.1261,0.14,0.1606,0.1654,0.167]}}};
+  var DIMENSIONS = [{"key":"primary","name":"一产占比","unit":"%","min":2.71,"max":23.78,"color":"#6A9A7B"},{"key":"secondary","name":"二产占比","unit":"%","min":33.59,"max":55.78,"color":"#C68A4A"},{"key":"tertiary","name":"三产占比","unit":"%","min":36.44,"max":57.9,"color":"#3E6F9E"},{"key":"fir","name":"金融相关率","unit":"倍","min":1.603,"max":5.305,"color":"#7B5EA7"},{"key":"fiscal","name":"财政汲取率","unit":"%","min":0.0504,"max":0.1713,"color":"#B45F5F"},{"key":"openness","name":"开放程度","unit":"%","min":0.0531,"max":1.5918,"color":"#4E8F9C"}];
+  var REGIONS = [
+    { name: '东部', keys: ['guangdong', 'jiangsu', 'zhejiang'] },
+    { name: '中部', keys: ['anhui', 'hubei'] },
+    { name: '西部', keys: ['sichuan', 'shaanxi'] },
+    { name: '东北', keys: ['liaoning'] }
+  ];
+  var YEAR_MIN = 2000;
+  var YEAR_MAX = 2023;
+  var state = { key: 'hubei', year: YEAR_MIN, playing: true, timer: null };
+
+  var chart = echarts.init(document.getElementById('chart'), null, { renderer: 'canvas' });
+  var nav = document.getElementById('provinceNav');
+  var title = document.getElementById('provinceTitle');
+  var regionLabel = document.getElementById('regionLabel');
+  var subtitle = document.getElementById('subtitle');
+  var yearBig = document.getElementById('yearBig');
+  var yearSlider = document.getElementById('yearSlider');
+  var playBtn = document.getElementById('playBtn');
+  var firValue = document.getElementById('firValue');
+  var firDelta = document.getElementById('firDelta');
+  var firRank = document.getElementById('firRank');
+  var industryValue = document.getElementById('industryValue');
+  var industryDelta = document.getElementById('industryDelta');
+
+  function shortName(key) { return PROVINCES[key].name; }
+  function currentData() { return PROVINCES[state.key].data; }
+  function idx() { return state.year - YEAR_MIN; }
+  function fmt(v, digits) { return Number(v).toFixed(digits == null ? 2 : digits); }
+  function pct(v) { return (v * 100).toFixed(2) + '%'; }
+  function display(dim, raw) {
+    if (dim.key === 'fiscal' || dim.key === 'openness') return (raw * 100).toFixed(2);
+    return raw.toFixed(2);
+  }
+
+  function buildNav() {
+    nav.innerHTML = '';
+    REGIONS.forEach(function (region) {
+      var group = document.createElement('div');
+      group.className = 'region';
+      var label = document.createElement('p');
+      label.className = 'region-title';
+      label.textContent = region.name;
+      group.appendChild(label);
+      region.keys.forEach(function (key, i) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'province' + (key === state.key ? ' active' : '');
+        b.dataset.key = key;
+        b.innerHTML = '<span>' + shortName(key) + '</span><span class="num">0' + (i + 1) + '</span>';
+        b.addEventListener('click', function () { selectProvince(key); });
+        group.appendChild(b);
+      });
+      nav.appendChild(group);
+    });
+  }
+
+  function setActiveNav() {
+    Array.prototype.forEach.call(nav.querySelectorAll('.province'), function (el) {
+      el.classList.toggle('active', el.dataset.key === state.key);
+    });
+  }
+
+  function seriesData(year) {
+    var d = currentData();
+    var i = year - YEAR_MIN;
+    return DIMENSIONS.map(function (dim) {
+      var raw = d[dim.key][i];
+      var score = (raw - dim.min) / (dim.max - dim.min) * 100;
+      return {
+        name: dim.name,
+        value: Math.max(0, Math.min(100, score)),
+        raw: raw,
+        display: display(dim, raw),
+        unit: dim.unit,
+        itemStyle: { color: dim.color }
+      };
+    });
+  }
+
+  function updateStats() {
+    var d = currentData();
+    var i = idx();
+    var fir = d.fir[i];
+    var delta = fir - d.fir[0];
+    var tert = d.tertiary[i];
+    var tertDelta = tert - d.tertiary[0];
+    var ranking = Object.keys(PROVINCES)
+      .map(function (key) { return { key: key, fir: PROVINCES[key].data.fir[i] }; })
+      .sort(function (a, b) { return b.fir - a.fir; });
+    var rank = 1;
+    ranking.forEach(function (row, n) { if (row.key === state.key) rank = n + 1; });
+
+    firValue.textContent = fmt(fir, 3);
+    firDelta.textContent = (delta >= 0 ? '+' : '') + fmt(delta, 3) + ' 较 2000 年';
+    firRank.textContent = '第 ' + rank + ' 名';
+    industryValue.textContent = fmt(tert, 1) + '%';
+    industryDelta.textContent = (tertDelta >= 0 ? '+' : '') + fmt(tertDelta, 1) + ' 个百分点';
+  }
+
+  function renderChart() {
+    chart.setOption({
+      series: [{ data: seriesData(state.year) }],
+      graphic: [
+        { id: 'yearText', style: { text: String(state.year) } },
+        { id: 'yearUnit', style: { text: '年' } }
+      ]
+    });
+    yearBig.textContent = String(state.year);
+    yearSlider.value = String(state.year);
+    updateStats();
+  }
+
+  function chartOption() {
+    return {
+      animationDuration: 700,
+      animationDurationUpdate: 520,
+      animationEasing: 'cubicOut',
+      animationEasingUpdate: 'cubicOut',
+      tooltip: {
+        trigger: 'item',
+        backgroundColor: 'rgba(255,255,255,.97)',
+        borderColor: '#e3eaf2',
+        borderWidth: 1,
+        padding: [11, 14],
+        textStyle: { color: '#334154', fontSize: 12 },
+        formatter: function (params) {
+          var d = params.data;
+          return '<div style="font-weight:700;margin-bottom:6px;color:' + params.color + '">' +
+            d.name + '</div>原始值：' + d.display + d.unit +
+            '<br/>归一化得分：<b>' + Number(d.value).toFixed(1) + '</b>';
+        }
+      },
+      series: [{
+        type: 'pie',
+        roseType: 'radius',
+        radius: ['17%', '64%'],
+        center: ['50%', '52%'],
+        itemStyle: {
+          borderRadius: 8,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: true,
+          formatter: '{b}',
+          color: '#46505e',
+          fontSize: 12,
+          fontWeight: 600
+        },
+        labelLine: {
+          length: 14,
+          length2: 18,
+          lineStyle: { color: '#b9c5d2', width: 1 }
+        },
+        emphasis: {
+          scale: true,
+          scaleSize: 5,
+          itemStyle: { shadowBlur: 18, shadowColor: 'rgba(31,47,66,.18)' }
+        },
+        data: seriesData(state.year)
+      }],
+      graphic: [
+        {
+          id: 'yearText',
+          type: 'text',
+          left: 'center',
+          top: '47%',
+          style: {
+            text: String(state.year),
+            font: '700 46px "Times New Roman", "Songti SC", serif',
+            fill: '#1c2430',
+            textAlign: 'center',
+            textVerticalAlign: 'middle'
+          },
+          z: 100
+        },
+        {
+          id: 'yearUnit',
+          type: 'text',
+          left: 'center',
+          top: '56%',
+          style: {
+            text: '年',
+            font: '11px "PingFang SC", "Microsoft YaHei", sans-serif',
+            fill: '#8d99a7',
+            textAlign: 'center',
+            textVerticalAlign: 'middle'
+          },
+          z: 100
+        }
+      ]
+    };
+  }
+
+  function pause() {
+    state.playing = false;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    playBtn.textContent = '播放';
+  }
+
+  function play() {
+    if (state.year >= YEAR_MAX) {
+      state.year = YEAR_MIN;
+      renderChart();
+    }
+    state.playing = true;
+    playBtn.textContent = '暂停';
+    if (state.timer) clearInterval(state.timer);
+    state.timer = setInterval(function () {
+      if (state.year >= YEAR_MAX) {
+        pause();
+        return;
+      }
+      state.year += 1;
+      renderChart();
+    }, 1000);
+  }
+
+  function selectProvince(key) {
+    if (!PROVINCES[key]) return;
+    state.key = key;
+    state.year = YEAR_MIN;
+    setActiveNav();
+    var p = PROVINCES[key];
+    title.textContent = p.name;
+    regionLabel.textContent = p.region + ' · 中国';
+    subtitle.textContent = '六维经济画像 · 2000—2023';
+    renderChart();
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.set('p', key);
+      history.replaceState(null, '', url.pathname + url.search);
+    } catch (e) { /* ignore */ }
+    if (state.playing) play(); else { pause(); }
+  }
+
+  function init() {
+    var params = new URLSearchParams(window.location.search);
+    var requested = params.get('p');
+    state.key = requested && PROVINCES[requested] ? requested : 'hubei';
+    buildNav();
+    var p = PROVINCES[state.key];
+    title.textContent = p.name;
+    regionLabel.textContent = p.region + ' · 中国';
+    subtitle.textContent = '六维经济画像 · 2000—2023';
+    chart.setOption(chartOption());
+    yearSlider.value = String(state.year);
+    playBtn.addEventListener('click', function () {
+      if (state.playing) pause(); else play();
+    });
+    yearSlider.addEventListener('input', function () {
+      pause();
+      state.year = Number(yearSlider.value);
+      renderChart();
+    });
+    window.addEventListener('resize', function () { chart.resize(); });
+    play();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
