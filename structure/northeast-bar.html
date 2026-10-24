@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>辽宁 2000—2023 三次产业结构动态堆积柱</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #eef1f6;
+    font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    position: relative;
+    width: 520px;
+    height: 660px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 36px rgba(31, 45, 61, 0.12);
+    overflow: hidden;
+  }
+  #chart { width: 100%; height: 100%; }
+
+  /* 年份角标 */
+  .year-badge {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 22px;
+    background: #2f3542;
+    color: #fff;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    border-radius: 10px;
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 6px 16px rgba(47, 53, 66, 0.22);
+    pointer-events: none;
+  }
+  .province {
+    position: absolute;
+    top: 68px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: #97a1af;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="chart"></div>
+  <div class="year-badge" id="yearBadge">2000</div>
+  <div class="province">辽宁 · 三次产业结构占比</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 数据：辽宁 2000—2023 ================= */
+  const DATA = [
+    { year: 2000, p1: 10.45, p2: 49.67, p3: 39.88 },
+    { year: 2001, p1: 10.46, p2: 47.91, p3: 41.63 },
+    { year: 2002, p1: 10.42, p2: 47.20, p3: 42.37 },
+    { year: 2003, p1: 10.01, p2: 47.56, p3: 42.43 },
+    { year: 2004, p1: 11.83, p2: 45.17, p3: 43.00 },
+    { year: 2005, p1: 11.64, p2: 46.91, p3: 41.46 },
+    { year: 2006, p1: 10.70, p2: 47.83, p3: 41.47 },
+    { year: 2007, p1: 10.34, p2: 48.55, p3: 41.11 },
+    { year: 2008, p1: 9.88,  p2: 50.99, p3: 39.13 },
+    { year: 2009, p1: 9.98,  p2: 50.29, p3: 39.73 },
+    { year: 2010, p1: 10.41, p2: 50.91, p3: 38.67 },
+    { year: 2011, p1: 10.21, p2: 51.12, p3: 38.67 },
+    { year: 2012, p1: 10.31, p2: 49.02, p3: 40.66 },
+    { year: 2013, p1: 10.10, p2: 47.12, p3: 42.78 },
+    { year: 2014, p1: 9.82,  p2: 44.35, p3: 45.83 },
+    { year: 2015, p1: 9.94,  p2: 40.39, p3: 49.66 },
+    { year: 2016, p1: 8.84,  p2: 37.76, p3: 53.40 },
+    { year: 2017, p1: 8.61,  p2: 37.68, p3: 53.72 },
+    { year: 2018, p1: 8.38,  p2: 37.53, p3: 54.09 },
+    { year: 2019, p1: 8.49,  p2: 37.05, p3: 54.46 },
+    { year: 2020, p1: 8.84,  p2: 35.97, p3: 55.19 },
+    { year: 2021, p1: 8.65,  p2: 37.46, p3: 53.89 },
+    { year: 2022, p1: 8.74,  p2: 36.73, p3: 54.53 },
+    { year: 2023, p1: 8.42,  p2: 35.38, p3: 56.21 }
+  ];
+
+  const MAX_IDX     = DATA.length - 1;   // 23
+  const MS_PER_YEAR = 800;               // 每向前推进"一年"所用毫秒数
+  const HOLD_MS     = 1200;              // 播到 2023 后停留时间，然后循环
+
+  const COLOR_1 = '#4CAF50';             // 一产 绿
+  const COLOR_2 = '#FF9800';             // 二产 橙
+  const COLOR_3 = '#2196F3';             // 三产 蓝
+
+  /* ================= 初始化图表 ================= */
+  const chartDom = document.getElementById('chart');
+  const chart = echarts.init(chartDom, null, { renderer: 'canvas' });
+
+  const option = {
+    animation: false,                    // 动画由 requestAnimationFrame 手动驱动
+    grid: { left: 78, right: 64, top: 132, bottom: 84 },
+    legend: {
+      bottom: 22,
+      itemWidth: 16,
+      itemHeight: 12,
+      itemGap: 26,
+      textStyle: { color: '#4a4a4a', fontSize: 14 }
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' }
+    },
+    xAxis: {
+      type: 'category',
+      data: ['辽宁'],
+      axisLine: { lineStyle: { color: '#dcdfe6' } },
+      axisTick: { show: false },
+      axisLabel: { show: false }
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      interval: 20,
+      axisLabel: { formatter: '{value}%', color: '#8b95a1', fontSize: 13 },
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: '#eef0f3', type: 'dashed' } }
+    },
+    series: [
+      {
+        name: '第一产业',
+        type: 'bar',
+        stack: 'total',
+        barWidth: 130,
+        itemStyle: { color: COLOR_1 },
+        label: {
+          show: true,
+          position: 'inside',
+          color: '#ffffff',
+          fontSize: 12,
+          fontWeight: 'bold',
+          formatter: function (p) { return p.value.toFixed(1) + '%'; }
+        },
+        data: [DATA[0].p1]
+      },
+      {
+        name: '第二产业',
+        type: 'bar',
+        stack: 'total',
+        barWidth: 130,
+        itemStyle: { color: COLOR_2 },
+        label: {
+          show: true,
+          position: 'inside',
+          color: '#ffffff',
+          fontSize: 12,
+          fontWeight: 'bold',
+          formatter: function (p) { return p.value.toFixed(1) + '%'; }
+        },
+        data: [DATA[0].p2]
+      },
+      {
+        name: '第三产业',
+        type: 'bar',
+        stack: 'total',
+        barWidth: 130,
+        itemStyle: { color: COLOR_3 },
+        label: {
+          show: true,
+          position: 'inside',
+          color: '#ffffff',
+          fontSize: 12,
+          fontWeight: 'bold',
+          formatter: function (p) { return p.value.toFixed(1) + '%'; }
+        },
+        data: [DATA[0].p3]
+      }
+    ]
+  };
+
+  chart.setOption(option);
+
+  /* ================= 动画状态机 ================= */
+  const badge = document.getElementById('yearBadge');
+
+  let progress    = 0;        // 0 ~ 23 的连续进度（可带小数）
+  let phase       = 'run';    // 'run' | 'hold'
+  let holdElapsed = 0;
+  let lastTs      = 0;
+  let lastYear    = -1;
+
+  /**
+   * 根据 progress 计算当前三产占比并刷新图表
+   * 相邻年份线性插值，使三段分界线连续滑动，换年份时不停顿
+   */
+  function draw() {
+    const idx = Math.min(Math.floor(progress), MAX_IDX - 1);
+    const t   = progress - idx;
+    const a   = DATA[idx];
+    const b   = DATA[Math.min(idx + 1, MAX_IDX)];
+
+    let v1 = a.p1 + (b.p1 - a.p1) * t;
+    let v2 = a.p2 + (b.p2 - a.p2) * t;
+    let v3 = a.p3 + (b.p3 - a.p3) * t;
+
+    // 归一化到 100%，保证柱顶恰好落在 100% 刻度线上
+    const sum = v1 + v2 + v3;
+    v1 = v1 / sum * 100;
+    v2 = v2 / sum * 100;
+    v3 = v3 / sum * 100;
+
+    chart.setOption({
+      series: [
+        { data: [v1] },
+        { data: [v2] },
+        { data: [v3] }
+      ]
+    }, { lazyUpdate: true });
+
+    // 年份角标：取最接近的整数年份
+    const year = DATA[Math.round(progress)].year;
+    if (year !== lastYear) {
+      lastYear = year;
+      badge.textContent = year;
+    }
+  }
+
+  function tick(ts) {
+    requestAnimationFrame(tick);
+
+    if (!lastTs) { lastTs = ts; return; }
+    let dt = ts - lastTs;
+    lastTs = ts;
+    if (dt > 120) dt = 120;            // 切标签页回来后防止跳帧
+
+    if (phase === 'run') {
+      progress += dt / MS_PER_YEAR;
+      if (progress >= MAX_IDX) {
+        progress = MAX_IDX;
+        phase = 'hold';
+        holdElapsed = 0;
+      }
+    } else {
+      holdElapsed += dt;
+      if (holdElapsed >= HOLD_MS) {
+        progress = 0;
+        phase = 'run';
+      }
+    }
+
+    draw();
+  }
+
+  // 首帧
+  draw();
+  requestAnimationFrame(tick);
+
+  /* ================= 自适应 ================= */
+  window.addEventListener('resize', function () {
+    chart.resize();
+  });
+})();
+</script>
+</body>
+</html>
