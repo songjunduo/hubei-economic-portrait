@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>东部 · 政策节点与金融深化（2000—2023）</title>
+<!-- 引入 ECharts -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: #ffffff;
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .chart-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .title {
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    color: #2f3542;
+    margin-top: 20px;
+    letter-spacing: 1px;
+  }
+  #chart {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="chart-container">
+  <div class="title">东部 · 政策节点与金融深化（2000—2023）</div>
+  <div id="chart"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 1. 数据准备 ================= */
+  const years = [];
+  for (let i = 2000; i <= 2023; i++) years.push(i.toString());
+
+  // 广东、江苏、浙江的 FIR 数据
+  const rawData = {
+    '广东': [3.72622, 3.41916, 3.58349, 3.58992, 3.39904, 3.28401, 3.17472, 3.02016, 3.00105, 3.48088, 3.52025, 3.39706, 3.59281, 3.75416, 3.68451, 4.31162, 3.59604, 3.57357, 3.63105, 3.71923, 4.18305, 4.14413, 4.39968, 4.58786],
+    '江苏': [1.67411, 1.73128, 1.89649, 2.14404, 2.11229, 2.01079, 2.03962, 2.01944, 2.03919, 2.44207, 2.44065, 2.313, 2.40285, 2.46749, 2.50903, 2.66328, 2.7422, 2.70242, 2.75864, 2.87226, 3.18445, 3.15736, 3.38676, 3.69417],
+    '浙江': [2.10775, 2.21869, 2.58515, 2.86803, 2.81899, 2.84998, 2.91146, 2.87784, 3.03459, 3.66832, 3.65846, 3.53145, 3.64018, 3.68336, 3.74886, 3.88859, 3.83767, 3.81612, 3.9555, 4.05843, 4.57871, 4.57821, 4.96877, 5.3052]
+  };
+
+  // 专属颜色映射
+  const colors = {
+    '广东': '#2E75B6', // 中蓝
+    '江苏': '#9DC3E6', // 浅蓝
+    '浙江': '#F48FB1'  // 浅粉
+  };
+
+  /* ================= 2. 公共气泡标签配置 ================= */
+  // 避免代码重复，提取公共的 markPoint label 样式
+  const markLabelStyle = {
+    show: true,
+    position: 'top',
+    formatter: '{c}', // 明确显示 data 中 value 的内容
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderColor: '#dcdfe6',
+    borderWidth: 1,
+    borderRadius: 4,
+    padding: [4, 8],
+    color: '#666666', // 用户要求的灰色文字
+    fontSize: 12,
+    fontWeight: 'normal',
+    shadowColor: 'rgba(0,0,0,0.08)',
+    shadowBlur: 6,
+    distance: 12 // 气泡离圆点的距离
+  };
+
+  /* ================= 3. 初始化图表 ================= */
+  const chart = echarts.init(document.getElementById('chart'));
+
+  const option = {
+    // 提示框
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'line' },
+      backgroundColor: 'rgba(255,255,255,0.95)',
+      borderWidth: 1,
+      borderColor: '#eee',
+      textStyle: { color: '#333' },
+      formatter: function (params) {
+        let html = `<div style="font-weight:bold; margin-bottom: 6px;">${params[0].axisValue}年</div>`;
+        params.forEach(p => {
+          html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${p.color}; margin-right:6px;"></span>${p.seriesName}</span>
+            <span style="font-weight:bold; margin-left: 20px;">${p.value.toFixed(2)}</span>
+          </div>`;
+        });
+        return html;
+      }
+    },
+    
+    // 布局
+    grid: {
+      top: 100,
+      bottom: 60,
+      left: 80,
+      right: 120
+    },
+    
+    // X 轴
+    xAxis: {
+      type: 'category',
+      data: years,
+      boundaryGap: false,
+      axisLine: { lineStyle: { color: '#ddd' } },
+      axisTick: { show: false },
+      axisLabel: {
+        color: '#888',
+        interval: function (index, value) {
+          return index % 2 === 0 || index === years.length - 1;
+        },
+        fontSize: 13
+      }
+    },
+    
+    // Y 轴
+    yAxis: {
+      type: 'value',
+      min: 1.5,
+      max: 5.5,
+      interval: 0.5,
+      axisLabel: { color: '#888', fontSize: 13 },
+      splitLine: { lineStyle: { color: '#f0f2f5', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false }
+    },
+    
+    // 折线系列
+    series: [
+      {
+        name: '广东',
+        type: 'line',
+        data: rawData['广东'],
+        color: colors['广东'],
+        showSymbol: false,
+        lineStyle: { width: 2.5 },
+        endLabel: {
+          show: true,
+          formatter: '{a} {c}',
+          color: colors['广东'],
+          fontSize: 14,
+          fontWeight: 'bold',
+          distance: 8
+        },
+        markPoint: {
+          symbol: 'circle',
+          symbolSize: 8, // 稍微加大节点，更醒目
+          itemStyle: {
+            color: '#fff',
+            borderColor: colors['广东'],
+            borderWidth: 2
+          },
+          label: markLabelStyle,
+          data: [
+            // 2008 珠三角规划纲要 -> 气泡朝下，避免和上方标签打架
+            { 
+              name: '2008', 
+              value: '2008 珠三角', 
+              coord: ['2008', rawData['广东'][8]], 
+              label: { position: 'bottom' } // 局部覆盖为下方显示
+            },
+            // 2019 粤港澳大湾区规划纲要 -> 气泡朝下
+            { 
+              name: '2019', 
+              value: '2019 大湾区', 
+              coord: ['2019', rawData['广东'][19]], 
+              label: { position: 'bottom' } 
+            }
+          ]
+        }
+      },
+      {
+        name: '江苏',
+        type: 'line',
+        data: rawData['江苏'],
+        color: colors['江苏'],
+        showSymbol: false,
+        lineStyle: { width: 2.5 },
+        endLabel: {
+          show: true,
+          formatter: '{a} {c}',
+          color: colors['江苏'],
+          fontSize: 14,
+          fontWeight: 'bold',
+          distance: 8
+        },
+        markPoint: {
+          symbol: 'circle',
+          symbolSize: 8,
+          itemStyle: {
+            color: '#fff',
+            borderColor: colors['江苏'],
+            borderWidth: 2
+          },
+          label: markLabelStyle,
+          data: [
+            // 2006 东部率先发展 -> 气泡朝上
+            { 
+              name: '2006', 
+              value: '2006 东部率先', 
+              coord: ['2006', rawData['江苏'][6]] 
+            },
+            // 2018 长三角一体化 -> 气泡朝上
+            { 
+              name: '2018', 
+              value: '2018 长三角', 
+              coord: ['2018', rawData['江苏'][18]] 
+            }
+          ]
+        }
+      },
+      {
+        name: '浙江',
+        type: 'line',
+        data: rawData['浙江'],
+        color: colors['浙江'],
+        showSymbol: false,
+        lineStyle: { width: 2.5 },
+        endLabel: {
+          show: true,
+          formatter: '{a} {c}',
+          color: colors['浙江'],
+          fontSize: 14,
+          fontWeight: 'bold',
+          distance: 8
+        },
+        markPoint: {
+          symbol: 'circle',
+          symbolSize: 8,
+          itemStyle: {
+            color: '#fff',
+            borderColor: colors['浙江'],
+            borderWidth: 2
+          },
+          label: markLabelStyle,
+          data: [
+            // 2012 温州金改试验区 -> 气泡朝上
+            { 
+              name: '2012', 
+              value: '2012 温州金改', 
+              coord: ['2012', rawData['浙江'][12]] 
+            }
+          ]
+        }
+      }
+    ]
+  };
+
+  chart.setOption(option);
+
+  /* ================= 4. 自适应 ================= */
+  window.addEventListener('resize', function () {
+    chart.resize();
+  });
+
+})();
+</script>
+</body>
+</html>
