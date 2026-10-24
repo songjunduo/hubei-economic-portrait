@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>东北 · 政策节点与金融深化（2000—2023）</title>
+<!-- 引入 ECharts -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: #ffffff;
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .chart-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .title {
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    color: #2f3542;
+    margin-top: 20px;
+    letter-spacing: 1px;
+  }
+  #chart {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="chart-container">
+  <div class="title">东北 · 政策节点与金融深化（2000—2023）</div>
+  <div id="chart"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 1. 数据准备 ================= */
+  const years = [];
+  for (let i = 2000; i <= 2023; i++) years.push(i.toString());
+
+  // 辽宁的 FIR 数据
+  const rawData = {
+    '辽宁': [2.37213, 2.42174, 2.537, 2.69301, 2.68852, 2.47601, 2.44118, 2.28601, 2.19612, 2.51821, 2.49562, 2.4144, 2.47963, 2.54068, 2.62262, 2.93142, 4.0625, 4.08077, 4.10822, 4.50753, 4.7859, 4.46381, 4.47614, 4.47563]
+  };
+
+  // 八省均值数据（用于虚线陪衬）
+  const meanData = [
+    2.27445, 2.33565, 2.37581, 2.64306, 2.55911, 2.51171, 2.48752, 2.38314, 2.41200, 2.84025,
+    2.76584, 2.63682, 2.73402, 2.82204, 2.87619, 3.14769, 3.25453, 3.24215, 3.26273, 3.29350,
+    3.65141, 3.58122, 3.77311, 3.97193
+  ];
+
+  // 专属颜色映射
+  const colors = {
+    '辽宁': '#7F7F7F', // 灰
+    '均值': '#B0B6C0'  // 浅灰
+  };
+
+  /* ================= 2. 公共气泡标签配置 ================= */
+  const markLabelStyle = {
+    show: true,
+    position: 'top',
+    formatter: '{c}',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderColor: '#dcdfe6',
+    borderWidth: 1,
+    borderRadius: 4,
+    padding: [4, 8],
+    color: '#666666',
+    fontSize: 12,
+    fontWeight: 'normal',
+    shadowColor: 'rgba(0,0,0,0.08)',
+    shadowBlur: 6,
+    distance: 12
+  };
+
+  /* ================= 3. 初始化图表 ================= */
+  const chart = echarts.init(document.getElementById('chart'));
+
+  const option = {
+    // 提示框
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'line' },
+      backgroundColor: 'rgba(255,255,255,0.95)',
+      borderWidth: 1,
+      borderColor: '#eee',
+      textStyle: { color: '#333' },
+      formatter: function (params) {
+        let html = `<div style="font-weight:bold; margin-bottom: 6px;">${params[0].axisValue}年</div>`;
+        params.forEach(p => {
+          html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${p.color}; margin-right:6px;"></span>${p.seriesName}</span>
+            <span style="font-weight:bold; margin-left: 20px;">${p.value.toFixed(2)}</span>
+          </div>`;
+        });
+        return html;
+      }
+    },
+    
+    // 布局：右侧留出 160px 空间放置数字卡片
+    grid: {
+      top: 80,
+      bottom: 60,
+      left: 80,
+      right: 170
+    },
+    
+    // X 轴
+    xAxis: {
+      type: 'category',
+      data: years,
+      boundaryGap: false,
+      axisLine: { lineStyle: { color: '#ddd' } },
+      axisTick: { show: false },
+      axisLabel: {
+        color: '#888',
+        interval: function (index, value) {
+          return index % 2 === 0 || index === years.length - 1;
+        },
+        fontSize: 13
+      }
+    },
+    
+    // Y 轴
+    yAxis: {
+      type: 'value',
+      min: 1.5,
+      max: 5.5,
+      interval: 0.5,
+      axisLabel: { color: '#888', fontSize: 13 },
+      splitLine: { lineStyle: { color: '#f0f2f5', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false }
+    },
+    
+    // 折线系列
+    series: [
+      {
+        name: '辽宁',
+        type: 'line',
+        data: rawData['辽宁'],
+        color: colors['辽宁'],
+        showSymbol: false,
+        lineStyle: { width: 2.5 },
+        endLabel: {
+          show: true,
+          formatter: '{a} {c}',
+          color: colors['辽宁'],
+          fontSize: 14,
+          fontWeight: 'bold',
+          distance: 8
+        },
+        markPoint: {
+          symbol: 'circle',
+          symbolSize: 8,
+          itemStyle: {
+            color: '#fff',
+            borderColor: colors['辽宁'],
+            borderWidth: 2
+          },
+          label: markLabelStyle,
+          data: [
+            // 2003 东北振兴战略启动（朝上）
+            { 
+              name: '2003', 
+              value: '2003 东北振兴战略', 
+              coord: ['2003', rawData['辽宁'][3]] 
+            },
+            // 2009 辽宁沿海经济带（朝下，与前后节点错开）
+            { 
+              name: '2009', 
+              value: '2009 辽宁沿海经济带', 
+              coord: ['2009', rawData['辽宁'][9]],
+              label: { position: 'bottom' }
+            },
+            // 2016 东北全面振兴意见（朝上）
+            { 
+              name: '2016', 
+              value: '2016 东北全面振兴', 
+              coord: ['2016', rawData['辽宁'][16]] 
+            }
+          ]
+        }
+      },
+      {
+        name: '八省均值',
+        type: 'line',
+        data: meanData,
+        color: colors['均值'],
+        showSymbol: false,
+        lineStyle: { width: 2, type: 'dashed' },
+        endLabel: {
+          show: true,
+          formatter: '{a}',
+          color: colors['均值'],
+          fontSize: 13,
+          distance: 8
+        }
+      }
+    ],
+
+    // 右侧三个数字卡片
+    graphic: [
+      {
+        type: 'group',
+        right: 40,
+        top: 100,
+        children: [
+          // 卡片1
+          {
+            type: 'rect',
+            shape: { width: 100, height: 70, r: 6 },
+            style: { fill: '#FAFBFC', stroke: '#E5E8EE', lineWidth: 1 }
+          },
+          {
+            type: 'text',
+            style: { text: '2003年', x: 50, y: 20, textAlign: 'center', fill: '#888', fontSize: 13 }
+          },
+          {
+            type: 'text',
+            style: { text: '2.69', x: 50, y: 46, textAlign: 'center', fill: colors['辽宁'], fontSize: 22, fontWeight: 'bold' }
+          },
+          
+          // 卡片2（向下偏移 90px）
+          {
+            type: 'rect',
+            shape: { x: 0, y: 90, width: 100, height: 70, r: 6 },
+            style: { fill: '#FAFBFC', stroke: '#E5E8EE', lineWidth: 1 }
+          },
+          {
+            type: 'text',
+            style: { text: '2016年', x: 50, y: 110, textAlign: 'center', fill: '#888', fontSize: 13 }
+          },
+          {
+            type: 'text',
+            style: { text: '4.06', x: 50, y: 136, textAlign: 'center', fill: colors['辽宁'], fontSize: 22, fontWeight: 'bold' }
+          },
+          
+          // 卡片3（向下偏移 180px）
+          {
+            type: 'rect',
+            shape: { x: 0, y: 180, width: 100, height: 70, r: 6 },
+            style: { fill: '#FAFBFC', stroke: '#E5E8EE', lineWidth: 1 }
+          },
+          {
+            type: 'text',
+            style: { text: '2023年', x: 50, y: 200, textAlign: 'center', fill: '#888', fontSize: 13 }
+          },
+          {
+            type: 'text',
+            style: { text: '4.48', x: 50, y: 226, textAlign: 'center', fill: colors['辽宁'], fontSize: 22, fontWeight: 'bold' }
+          }
+        ]
+      }
+    ]
+  };
+
+  chart.setOption(option);
+
+  /* ================= 4. 自适应 ================= */
+  window.addEventListener('resize', function () {
+    chart.resize();
+  });
+
+})();
+</script>
+</body>
+</html>
