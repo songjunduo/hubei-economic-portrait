@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>图6 八省财政收入占比与FIR小倍图（2000—2023）</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: #eef1f6;
+    font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  }
+  body {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+    overflow-x: auto;
+  }
+  .card {
+    width: 1520px;
+    flex: 0 0 auto;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 36px rgba(31, 45, 61, 0.12);
+    overflow: hidden;
+  }
+  #chart { width: 1520px; height: 820px; }
+  .legend-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 48px;
+    padding: 6px 24px 20px;
+    font-size: 13px;
+    color: #4a4a4a;
+    background: #ffffff;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .line-solid {
+    display: inline-block;
+    width: 28px;
+    height: 0;
+    border-top: 3px solid #2E75B6;
+  }
+  .line-dashed {
+    display: inline-block;
+    width: 28px;
+    height: 0;
+    border-top: 3px dashed #ED7D31;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="chart"></div>
+  <div class="legend-bar">
+    <span class="legend-item"><span class="line-solid"></span>财政收入占GDP比重（%，左轴）</span>
+    <span class="legend-item"><span class="line-dashed"></span>FIR（右轴）</span>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 年份 ================= */
+  const YEARS = [];
+  for (let y = 2000; y <= 2023; y++) YEARS.push(String(y));
+
+  /* ================= 省份配色（与图2折线图一致） ================= */
+  const PROVINCE_COLOR = {
+    '广东': '#2E75B6',
+    '江苏': '#9DC3E6',
+    '浙江': '#F48FB1',
+    '湖北': '#E60012',
+    '安徽': '#F4B183',
+    '四川': '#FFD700',
+    '陕西': '#A9D18E',
+    '辽宁': '#7F7F7F'
+  };
+
+  /* 线条颜色固定，与图6规格一致 */
+  const COLOR_SHARE = '#2E75B6';   // 系列1 实线
+  const COLOR_FIR   = '#ED7D31';   // 系列2 虚线
+
+  /* ================= 数据 ================= */
+  const PROVINCES = [
+    {
+      name: '广东',
+      share: [8.31, 9.42, 8.68, 8.08, 7.47, 8.08, 8.25, 8.62, 8.86, 9.08, 9.65, 10.21, 10.73, 11.11, 11.59, 12.35, 12.44, 12.17, 11.88, 11.46, 11.37, 11.06, 10.00, 10.04],
+      fir:   [3.72622, 3.41916, 3.58349, 3.58992, 3.39904, 3.28401, 3.17472, 3.02016, 3.00105, 3.48088, 3.52025, 3.39706, 3.59281, 3.75416, 3.68451, 4.31162, 3.59604, 3.57357, 3.63105, 3.71923, 4.18305, 4.14413, 4.39968, 4.58786]
+    },
+    {
+      name: '江苏',
+      share: [5.19, 5.99, 6.00, 6.34, 6.54, 7.21, 7.70, 8.48, 8.69, 9.21, 9.67, 10.36, 10.72, 10.86, 10.92, 11.17, 10.38, 9.45, 9.23, 8.82, 8.66, 8.36, 7.43, 7.58],
+      fir:   [1.67411, 1.73128, 1.89649, 2.14404, 2.11229, 2.01079, 2.03962, 2.01944, 2.03919, 2.44207, 2.44065, 2.31300, 2.40285, 2.46749, 2.50903, 2.66328, 2.74220, 2.70242, 2.75864, 2.87226, 3.18445, 3.15736, 3.38676, 3.69417]
+    },
+    {
+      name: '浙江',
+      share: [5.56, 6.03, 7.05, 7.24, 7.85, 8.19, 8.48, 8.85, 9.08, 9.38, 9.52, 9.89, 10.01, 10.17, 10.30, 11.06, 11.22, 11.08, 11.38, 11.28, 10.79, 10.76, 9.95, 10.04],
+      fir:   [2.10775, 2.21869, 2.58515, 2.86803, 2.81899, 2.84998, 2.91146, 2.87784, 3.03459, 3.66832, 3.65846, 3.53145, 3.64018, 3.68336, 3.74886, 3.88859, 3.83767, 3.81612, 3.95550, 4.05843, 4.57871, 4.57821, 4.96877, 5.30520]
+    },
+    {
+      name: '湖北',
+      share: [5.99, 5.91, 5.71, 5.39, 5.52, 5.73, 6.23, 6.15, 6.07, 6.07, 6.13, 7.55, 7.95, 8.48, 8.91, 9.80, 9.19, 8.63, 7.80, 7.44, 5.84, 6.55, 6.14, 6.50],
+      fir:   [1.65241, 2.06820, 2.21601, 2.30945, 2.20317, 2.09928, 2.10062, 1.99172, 1.93357, 2.25019, 2.23608, 2.01768, 2.06786, 2.15527, 2.20582, 2.34298, 2.50466, 2.59099, 2.53290, 2.40925, 2.92406, 2.78957, 2.85896, 2.98954]
+    },
+    {
+      name: '安徽',
+      share: [5.65, 5.42, 5.16, 5.05, 5.27, 5.80, 6.48, 6.73, 7.48, 7.81, 8.53, 8.85, 9.63, 9.93, 9.70, 10.17, 9.97, 9.33, 8.87, 8.47, 8.33, 8.12, 7.88, 8.17],
+      fir:   [1.60306, 1.69794, 1.81572, 1.92827, 1.91871, 1.95658, 2.02587, 1.98531, 1.96768, 2.27004, 2.28282, 2.20211, 2.32434, 2.42475, 2.53461, 2.77068, 2.91044, 2.96432, 2.98241, 2.65849, 2.88047, 2.89630, 3.16711, 3.39434]
+    },
+    {
+      name: '四川',
+      share: [5.88, 6.23, 6.09, 6.21, 6.03, 6.58, 7.06, 7.95, 8.05, 8.16, 8.94, 9.59, 9.99, 10.37, 10.43, 10.88, 10.00, 9.29, 8.98, 8.63, 8.62, 8.66, 8.47, 9.01],
+      fir:   [2.13619, 2.27212, 2.37751, 2.46505, 2.43191, 2.76564, 2.69476, 2.51849, 2.82048, 3.38266, 2.87623, 2.73393, 2.83754, 2.97138, 3.05013, 3.26683, 3.29340, 3.23729, 3.20041, 3.06490, 3.28929, 3.29817, 3.54606, 3.76854]
+    },
+    {
+      name: '陕西',
+      share: [6.31, 6.68, 6.59, 6.77, 6.76, 7.14, 7.80, 8.28, 8.15, 9.08, 9.61, 12.18, 11.18, 10.85, 10.72, 11.33, 9.48, 9.22, 9.21, 8.73, 8.58, 9.11, 10.02, 10.12],
+      fir:   [2.92375, 2.85605, 2.99509, 3.14667, 2.90021, 2.65135, 2.51196, 2.36614, 2.30330, 2.70962, 2.61661, 2.48494, 2.52692, 2.57920, 2.65397, 3.00612, 3.08933, 2.97175, 2.93270, 3.05793, 3.38534, 3.32219, 3.38139, 3.56013]
+    },
+    {
+      name: '辽宁',
+      share: [6.29, 7.30, 7.26, 7.48, 8.09, 9.20, 9.63, 10.39, 11.02, 12.24, 14.21, 15.94, 17.13, 17.12, 15.67, 10.30, 10.56, 10.82, 10.85, 10.33, 10.28, 9.71, 8.49, 8.78],
+      fir:   [2.37213, 2.42174, 2.53700, 2.69301, 2.68852, 2.47601, 2.44118, 2.28601, 2.19612, 2.51821, 2.49562, 2.41440, 2.47963, 2.54068, 2.62262, 2.93142, 4.06250, 4.08077, 4.10822, 4.50753, 4.78590, 4.46381, 4.47614, 4.47563]
+    }
+  ];
+
+  /* ================= 布局参数 ================= */
+  const COLS    = 4;
+  const CARD_W  = 300;
+  const CARD_H  = 280;
+  const GAP_X   = 55;
+  const GAP_Y   = 110;
+  const START_X = 75;
+  const START_Y = 100;
+
+  /* ================= 初始化图表 ================= */
+  const chart = echarts.init(document.getElementById('chart'), null, { renderer: 'canvas' });
+
+  const grids  = [];
+  const xAxes  = [];
+  const yAxes  = [];
+  const series = [];
+  const titles = [
+    {
+      text: '八省财政收入占GDP比重与FIR（2000—2023）',
+      left: 'center',
+      top: 16,
+      textStyle: { fontSize: 20, fontWeight: 'bold', color: '#2f3542' }
+    }
+  ];
+
+  PROVINCES.forEach(function (p, i) {
+    const col = i % COLS;
+    const row = Math.floor(i / COLS);
+    const gx  = START_X + col * (CARD_W + GAP_X);
+    const gy  = START_Y + row * (CARD_H + GAP_Y);
+
+    /* ---- 面板标题：省份名，用图2的省份配色 ---- */
+    titles.push({
+      text: p.name,
+      left: gx + CARD_W / 2,
+      top: gy - 34,
+      textAlign: 'center',
+      textStyle: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: PROVINCE_COLOR[p.name]
+      }
+    });
+
+    grids.push({
+      left: gx,
+      top: gy,
+      width: CARD_W,
+      height: CARD_H
+    });
+
+    xAxes.push({
+      gridIndex: i,
+      type: 'category',
+      data: YEARS,
+      boundaryGap: false,
+      axisLine: { lineStyle: { color: '#dcdfe6' } },
+      axisTick: { show: false },
+      splitLine: { show: false },
+      axisLabel: {
+        fontSize: 10,
+        color: '#8b95a1',
+        interval: function (index) {
+          return index % 5 === 0 || index === YEARS.length - 1;
+        }
+      }
+    });
+
+    yAxes.push({
+      gridIndex: i,
+      type: 'value',
+      min: 0,
+      max: 18,
+      interval: 4,
+      position: 'left',
+      axisLabel: { fontSize: 10, color: COLOR_SHARE },
+      axisLine: { show: true, lineStyle: { color: COLOR_SHARE } },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: '#f0f2f5', type: 'dashed' } }
+    });
+
+    yAxes.push({
+      gridIndex: i,
+      type: 'value',
+      min: 1,
+      max: 5.5,
+      interval: 1,
+      position: 'right',
+      axisLabel: { fontSize: 10, color: COLOR_FIR },
+      axisLine: { show: true, lineStyle: { color: COLOR_FIR } },
+      axisTick: { show: false },
+      splitLine: { show: false }
+    });
+
+    series.push({
+      name: '财政收入占GDP比重',
+      type: 'line',
+      xAxisIndex: i,
+      yAxisIndex: i * 2,
+      data: p.share,
+      showSymbol: false,
+      smooth: false,
+      lineStyle: { width: 2.2, color: COLOR_SHARE },
+      itemStyle: { color: COLOR_SHARE },
+      emphasis: { focus: 'series' }
+    });
+
+    series.push({
+      name: 'FIR',
+      type: 'line',
+      xAxisIndex: i,
+      yAxisIndex: i * 2 + 1,
+      data: p.fir,
+      showSymbol: false,
+      smooth: false,
+      lineStyle: { width: 1.9, color: COLOR_FIR, type: 'dashed' },
+      itemStyle: { color: COLOR_FIR },
+      emphasis: { focus: 'series' }
+    });
+  });
+
+  const option = {
+    animation: true,
+    animationDuration: 900,
+    title: titles,
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'line' },
+      confine: true,
+      padding: 8,
+      borderWidth: 1,
+      borderColor: '#e5e8ee',
+      backgroundColor: 'rgba(255,255,255,0.97)',
+      textStyle: { fontSize: 12, color: '#333' },
+      formatter: function (params) {
+        if (!params || !params.length) return '';
+        let s = '<b>' + params[0].axisValue + '</b><br/>';
+        params.forEach(function (p) {
+          const isFIR = p.seriesName === 'FIR';
+          let v = p.value;
+          if (v == null) {
+            v = '-';
+          } else if (typeof v === 'number') {
+            v = isFIR ? v.toFixed(3) : v.toFixed(2) + '%';
+          }
+          s += p.marker + p.seriesName + '：' + v + '<br/>';
+        });
+        return s;
+      }
+    },
+    grid: grids,
+    xAxis: xAxes,
+    yAxis: yAxes,
+    series: series
+  };
+
+  chart.setOption(option);
+
+  /* ================= 自适应 ================= */
+  window.addEventListener('resize', function () {
+    chart.resize();
+  });
+})();
+</script>
+</body>
+</html>
