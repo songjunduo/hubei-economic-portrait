@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>东部板块 2001—2023 三次产业增速</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #eef1f6;
+    font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    position: relative;
+    width: 820px;
+    height: 580px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 36px rgba(31, 45, 61, 0.12);
+    overflow: hidden;
+  }
+  #chart { width: 100%; height: 100%; }
+
+  /* 年份角标 */
+  .year-badge {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 20px;
+    background: #2f3542;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    border-radius: 9px;
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 6px 16px rgba(47, 53, 66, 0.22);
+    pointer-events: none;
+  }
+  .subtitle {
+    position: absolute;
+    top: 62px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: #97a1af;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="chart"></div>
+  <div class="year-badge" id="yearBadge">2001</div>
+  <div class="subtitle">东部板块 · 三次产业增速</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 数据：东部 2001—2023（单位：%） ================= */
+  const YEARS = [];
+  const V1 = [];   // 一产增速
+  const V2 = [];   // 二产增速
+  const V3 = [];   // 三产增速
+
+  const RAW = [
+    [2001, 0.03, 0.10, 0.16],
+    [2002, 0.02, 0.13, 0.16],
+    [2003, 0.05, 0.23, 0.16],
+    [2004, 0.13, 0.21, 0.15],
+    [2005, 0.10, 0.19, 0.18],
+    [2006, 0.06, 0.18, 0.19],
+    [2007, 0.12, 0.22, 0.25],
+    [2008, 0.15, 0.16, 0.18],
+    [2009, 0.05, 0.06, 0.13],
+    [2010, 0.14, 0.18, 0.20],
+    [2011, 0.18, 0.15, 0.18],
+    [2012, 0.08, 0.06, 0.12],
+    [2013, 0.06, 0.07, 0.13],
+    [2014, 0.04, 0.08, 0.10],
+    [2015, 0.06, 0.06, 0.11],
+    [2016, 0.06, 0.05, 0.14],
+    [2017, 0.02, 0.10, 0.13],
+    [2018, 0.04, 0.08, 0.11],
+    [2019, 0.08, 0.05, 0.10],
+    [2020, 0.07, 0.01, 0.07],
+    [2021, 0.04, 0.17, 0.12],
+    [2022, 0.05, 0.03, 0.05],
+    [2023, 0.05, 0.03, 0.06]
+  ];
+
+  RAW.forEach(function (row) {
+    YEARS.push(row[0]);
+    V1.push(row[1] * 100);
+    V2.push(row[2] * 100);
+    V3.push(row[3] * 100);
+  });
+
+  const START_YEAR  = YEARS[0];          // 2001
+  const END_YEAR    = YEARS[YEARS.length - 1]; // 2023
+  const MAX_IDX     = YEARS.length - 1;  // 22
+  const MS_PER_YEAR = 800;               // 每年前进速度
+  const HOLD_MS     = 1200;              // 播到 2023 后停留时间
+
+  const COLOR_1 = '#4CAF50';             // 一产 绿
+  const COLOR_2 = '#FF9800';             // 二产 橙
+  const COLOR_3 = '#2196F3';             // 三产 蓝
+
+  /* ================= 初始化图表 ================= */
+  const chartDom = document.getElementById('chart');
+  const chart = echarts.init(chartDom, null, { renderer: 'canvas' });
+
+  const option = {
+    animation: false,                    // 动画由 requestAnimationFrame 手动驱动
+    grid: { left: 76, right: 118, top: 118, bottom: 76 },
+    legend: {
+      bottom: 18,
+      itemWidth: 18,
+      itemHeight: 12,
+      itemGap: 32,
+      textStyle: { color: '#4a4a4a', fontSize: 14 }
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'line' },
+      valueFormatter: function (v) { return v.toFixed(1) + '%'; }
+    },
+    xAxis: {
+      type: 'value',
+      min: START_YEAR,
+      max: END_YEAR,
+      interval: 2,
+      axisLine: { lineStyle: { color: '#dcdfe6' } },
+      axisTick: { show: false },
+      splitLine: { show: false },
+      axisLabel: {
+        color: '#8b95a1',
+        fontSize: 12,
+        formatter: function (v) { return Math.round(v); }
+      }
+    },
+    yAxis: {
+      type: 'value',
+      min: -10,
+      max: 30,
+      interval: 10,
+      name: '增速(%)',
+      nameTextStyle: { color: '#8b95a1', fontSize: 12, padding: [0, 0, 8, 0] },
+      axisLabel: { formatter: '{value}%', color: '#8b95a1', fontSize: 12 },
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: '#eef0f3', type: 'dashed' } }
+    },
+    series: [
+      {
+        name: '第一产业',
+        type: 'line',
+        showSymbol: false,
+        smooth: false,
+        lineStyle: { width: 3, color: COLOR_1 },
+        itemStyle: { color: COLOR_1 },
+        emphasis: { focus: 'series' },
+        endLabel: {
+          show: true,
+          color: COLOR_1,
+          fontSize: 12,
+          fontWeight: 'bold',
+          formatter: function (p) { return p.value[1].toFixed(1) + '%'; }
+        },
+        data: []
+      },
+      {
+        name: '第二产业',
+        type: 'line',
+        showSymbol: false,
+        smooth: false,
+        lineStyle: { width: 3, color: COLOR_2 },
+        itemStyle: { color: COLOR_2 },
+        emphasis: { focus: 'series' },
+        endLabel: {
+          show: true,
+          color: COLOR_2,
+          fontSize: 12,
+          fontWeight: 'bold',
+          formatter: function (p) { return p.value[1].toFixed(1) + '%'; }
+        },
+        data: []
+      },
+      {
+        name: '第三产业',
+        type: 'line',
+        showSymbol: false,
+        smooth: false,
+        lineStyle: { width: 3, color: COLOR_3 },
+        itemStyle: { color: COLOR_3 },
+        emphasis: { focus: 'series' },
+        endLabel: {
+          show: true,
+          color: COLOR_3,
+          fontSize: 12,
+          fontWeight: 'bold',
+          formatter: function (p) { return p.value[1].toFixed(1) + '%'; }
+        },
+        data: []
+      }
+    ]
+  };
+
+  chart.setOption(option);
+
+  /* ================= 动画状态机 ================= */
+  const badge = document.getElementById('yearBadge');
+
+  let progress    = 0;
+  let phase       = 'run';
+  let holdElapsed = 0;
+  let lastTs      = 0;
+  let lastYear    = -1;
+
+  /**
+   * 根据当前进度构造某条线的可见数据点
+   * 前面的完整年份 + 末端一个插值点，实现"跑道式"平滑前伸
+   */
+  function buildLineData(vals, prog) {
+    const idx = Math.min(Math.floor(prog), MAX_IDX);
+    const t   = prog - idx;
+    const pts = [];
+    for (let i = 0; i <= idx; i++) {
+      pts.push([START_YEAR + i, vals[i]]);
+    }
+    if (prog < MAX_IDX) {
+      const y = vals[idx] + (vals[idx + 1] - vals[idx]) * t;
+      pts.push([START_YEAR + prog, y]);
+    }
+    return pts;
+  }
+
+  function draw() {
+    chart.setOption({
+      series: [
+        { data: buildLineData(V1, progress) },
+        { data: buildLineData(V2, progress) },
+        { data: buildLineData(V3, progress) }
+      ]
+    }, { lazyUpdate: true });
+
+    const year = START_YEAR + Math.round(progress);
+    if (year !== lastYear) {
+      lastYear = year;
+      badge.textContent = year;
+    }
+  }
+
+  function tick(ts) {
+    requestAnimationFrame(tick);
+
+    if (!lastTs) { lastTs = ts; return; }
+    let dt = ts - lastTs;
+    lastTs = ts;
+    if (dt > 120) dt = 120;            // 切标签页回来后防止跳帧
+
+    if (phase === 'run') {
+      progress += dt / MS_PER_YEAR;
+      if (progress >= MAX_IDX) {
+        progress = MAX_IDX;
+        phase = 'hold';
+        holdElapsed = 0;
+      }
+    } else {
+      holdElapsed += dt;
+      if (holdElapsed >= HOLD_MS) {
+        progress = 0;
+        phase = 'run';
+      }
+    }
+
+    draw();
+  }
+
+  // 首帧
+  draw();
+  requestAnimationFrame(tick);
+
+  /* ================= 自适应 ================= */
+  window.addEventListener('resize', function () {
+    chart.resize();
+  });
+})();
+</script>
+</body>
+</html>
