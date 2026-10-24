@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>粤苏浙 2000—2023 三次产业结构动态堆积柱</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #eef1f6;
+    font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    position: relative;
+    width: 720px;
+    height: 660px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 36px rgba(31, 45, 61, 0.12);
+    overflow: hidden;
+  }
+  #chart { width: 100%; height: 100%; }
+
+  /* 年份角标 */
+  .year-badge {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 22px;
+    background: #2f3542;
+    color: #fff;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    border-radius: 10px;
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 6px 16px rgba(47, 53, 66, 0.22);
+    pointer-events: none;
+  }
+  .subtitle {
+    position: absolute;
+    top: 68px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: #97a1af;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="chart"></div>
+  <div class="year-badge" id="yearBadge">2000</div>
+  <div class="subtitle">广东 · 江苏 · 浙江　三次产业结构占比</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 数据 ================= */
+  const PROVINCES = ['广东', '江苏', '浙江'];
+
+  // 每条记录：{ year, gd:[一,二,三], js:[一,二,三], zj:[一,二,三] }
+  const DATA = [
+    { year: 2000, gd: [9.00,  46.02, 44.98], js: [12.14, 51.37, 36.49], zj: [10.24, 53.32, 36.44] },
+    { year: 2001, gd: [8.03,  45.17, 46.80], js: [11.46, 51.36, 37.18], zj: [9.52,  51.82, 38.65] },
+    { year: 2002, gd: [7.33,  44.84, 47.83], js: [10.35, 52.26, 37.38], zj: [8.52,  51.15, 40.33] },
+    { year: 2003, gd: [6.59,  47.18, 46.23], js: [9.23,  53.92, 36.85], zj: [7.36,  52.56, 40.08] },
+    { year: 2004, gd: [6.42,  48.39, 45.19], js: [8.67,  55.51, 35.82], zj: [7.00,  53.65, 39.35] },
+    { year: 2005, gd: [6.24,  49.40, 44.36], js: [7.58,  55.78, 36.64], zj: [6.77,  53.37, 39.86] },
+    { year: 2006, gd: [5.66,  49.84, 44.50], js: [6.82,  55.71, 37.47], zj: [5.97,  54.21, 39.82] },
+    { year: 2007, gd: [5.15,  49.59, 45.26], js: [6.50,  54.97, 38.53], zj: [5.20,  54.31, 40.49] },
+    { year: 2008, gd: [5.14,  49.58, 45.28], js: [6.32,  54.22, 39.45], zj: [5.04,  54.09, 40.87] },
+    { year: 2009, gd: [4.84,  48.34, 46.82], js: [6.11,  53.22, 40.67], zj: [4.97,  52.04, 42.99] },
+    { year: 2010, gd: [4.70,  48.95, 46.36], js: [5.71,  51.82, 42.47], zj: [4.83,  51.61, 43.56] },
+    { year: 2011, gd: [4.73,  48.44, 46.83], js: [5.85,  50.78, 43.37], zj: [4.82,  51.08, 44.10] },
+    { year: 2012, gd: [4.67,  47.10, 48.23], js: [5.93,  49.67, 44.40], zj: [4.68,  49.56, 45.75] },
+    { year: 2013, gd: [4.51,  46.02, 49.47], js: [5.70,  48.18, 46.13], zj: [4.60,  48.65, 46.75] },
+    { year: 2014, gd: [4.37,  45.88, 49.75], js: [5.45,  46.88, 47.67], zj: [4.31,  48.92, 46.76] },
+    { year: 2015, gd: [4.21,  44.73, 51.06], js: [5.50,  46.43, 48.07], zj: [4.07,  47.36, 48.57] },
+    { year: 2016, gd: [4.19,  42.52, 53.29], js: [5.16,  44.78, 50.06], zj: [4.00,  45.65, 50.35] },
+    { year: 2017, gd: [3.88,  41.44, 54.68], js: [4.68,  45.22, 50.10], zj: [3.69,  44.36, 51.95] },
+    { year: 2018, gd: [3.77,  40.64, 55.60], js: [4.43,  45.08, 50.49], zj: [3.41,  43.63, 52.96] },
+    { year: 2019, gd: [3.94,  39.40, 56.66], js: [4.30,  44.35, 51.34], zj: [3.34,  42.10, 54.55] },
+    { year: 2020, gd: [4.16,  38.48, 57.36], js: [4.34,  43.41, 52.25], zj: [3.23,  39.66, 57.11] },
+    { year: 2021, gd: [3.91,  39.17, 56.92], js: [3.94,  44.70, 51.36], zj: [2.88,  40.87, 56.25] },
+    { year: 2022, gd: [4.04,  38.73, 57.23], js: [3.98,  44.43, 51.59], zj: [2.71,  40.70, 56.59] },
+    { year: 2023, gd: [4.03,  38.20, 57.77], js: [3.88,  43.79, 52.33], zj: [2.88,  39.23, 57.90] }
+  ];
+
+  const MAX_IDX     = DATA.length - 1;   // 23
+  const MS_PER_YEAR = 800;               // 每年前进速度
+  const HOLD_MS     = 1200;              // 播到 2023 后停留时间
+
+  const COLOR_1 = '#4CAF50';             // 一产 绿
+  const COLOR_2 = '#FF9800';             // 二产 橙
+  const COLOR_3 = '#2196F3';             // 三产 蓝
+
+  /* ================= 初始化图表 ================= */
+  const chartDom = document.getElementById('chart');
+  const chart = echarts.init(chartDom, null, { renderer: 'canvas' });
+
+  const option = {
+    animation: false,
+    grid: { left: 72, right: 56, top: 132, bottom: 84 },
+    legend: {
+      bottom: 22,
+      itemWidth: 16,
+      itemHeight: 12,
+      itemGap: 30,
+      textStyle: { color: '#4a4a4a', fontSize: 14 }
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' }
+    },
+    xAxis: {
+      type: 'category',
+      data: PROVINCES,
+      axisLine: { lineStyle: { color: '#dcdfe6' } },
+      axisTick: { show: false },
+      axisLabel: {
+        color: '#4a4a4a',
+        fontSize: 18,
+        fontWeight: 'bold',
+        letterSpacing: 2
+      }
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      interval: 20,
+      axisLabel: { formatter: '{value}%', color: '#8b95a1', fontSize: 13 },
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: '#eef0f3', type: 'dashed' } }
+    },
+    series: [
+      {
+        name: '第一产业',
+        type: 'bar',
+        stack: 'total',
+        barWidth: 96,
+        itemStyle: { color: COLOR_1 },
+        label: {
+          show: true,
+          position: 'inside',
+          color: '#ffffff',
+          fontSize: 12,
+          fontWeight: 'bold',
+          formatter: function (p) { return p.value.toFixed(1) + '%'; }
+        },
+        data: [DATA[0].gd[0], DATA[0].js[0], DATA[0].zj[0]]
+      },
+      {
+        name: '第二产业',
+        type: 'bar',
+        stack: 'total',
+        barWidth: 96,
+        itemStyle: { color: COLOR_2 },
+        label: {
+          show: true,
+          position: 'inside',
+          color: '#ffffff',
+          fontSize: 12,
+          fontWeight: 'bold',
+          formatter: function (p) { return p.value.toFixed(1) + '%'; }
+        },
+        data: [DATA[0].gd[1], DATA[0].js[1], DATA[0].zj[1]]
+      },
+      {
+        name: '第三产业',
+        type: 'bar',
+        stack: 'total',
+        barWidth: 96,
+        itemStyle: { color: COLOR_3 },
+        label: {
+          show: true,
+          position: 'inside',
+          color: '#ffffff',
+          fontSize: 12,
+          fontWeight: 'bold',
+          formatter: function (p) { return p.value.toFixed(1) + '%'; }
+        },
+        data: [DATA[0].gd[2], DATA[0].js[2], DATA[0].zj[2]]
+      }
+    ]
+  };
+
+  chart.setOption(option);
+
+  /* ================= 动画状态机 ================= */
+  const badge = document.getElementById('yearBadge');
+
+  let progress    = 0;
+  let phase       = 'run';
+  let holdElapsed = 0;
+  let lastTs      = 0;
+  let lastYear    = -1;
+
+  /**
+   * 根据 progress 计算三省三产占比并刷新图表
+   * 相邻年份线性插值，每根柱子的分界线连续滑动
+   */
+  function draw() {
+    const idx = Math.min(Math.floor(progress), MAX_IDX - 1);
+    const t   = progress - idx;
+    const a   = DATA[idx];
+    const b   = DATA[Math.min(idx + 1, MAX_IDX)];
+
+    const keys = ['gd', 'js', 'zj'];
+    const v1 = [], v2 = [], v3 = [];
+
+    for (let k = 0; k < keys.length; k++) {
+      const key = keys[k];
+      let s1 = a[key][0] + (b[key][0] - a[key][0]) * t;
+      let s2 = a[key][1] + (b[key][1] - a[key][1]) * t;
+      let s3 = a[key][2] + (b[key][2] - a[key][2]) * t;
+
+      // 归一化到 100%，保证柱顶落在 100% 刻度线上
+      const sum = s1 + s2 + s3;
+      v1.push(s1 / sum * 100);
+      v2.push(s2 / sum * 100);
+      v3.push(s3 / sum * 100);
+    }
+
+    chart.setOption({
+      series: [
+        { data: v1 },
+        { data: v2 },
+        { data: v3 }
+      ]
+    }, { lazyUpdate: true });
+
+    const year = DATA[Math.round(progress)].year;
+    if (year !== lastYear) {
+      lastYear = year;
+      badge.textContent = year;
+    }
+  }
+
+  function tick(ts) {
+    requestAnimationFrame(tick);
+
+    if (!lastTs) { lastTs = ts; return; }
+    let dt = ts - lastTs;
+    lastTs = ts;
+    if (dt > 120) dt = 120;
+
+    if (phase === 'run') {
+      progress += dt / MS_PER_YEAR;
+      if (progress >= MAX_IDX) {
+        progress = MAX_IDX;
+        phase = 'hold';
+        holdElapsed = 0;
+      }
+    } else {
+      holdElapsed += dt;
+      if (holdElapsed >= HOLD_MS) {
+        progress = 0;
+        phase = 'run';
+      }
+    }
+
+    draw();
+  }
+
+  // 首帧
+  draw();
+  requestAnimationFrame(tick);
+
+  /* ================= 自适应 ================= */
+  window.addEventListener('resize', function () {
+    chart.resize();
+  });
+})();
+</script>
+</body>
+</html>
